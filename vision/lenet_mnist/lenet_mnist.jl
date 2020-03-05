@@ -110,6 +110,7 @@ function train!(model; kws...)
     end
     if args.tblogger # create tensorboard logger
         tblogger = TensorBoardLogger.TBLogger(args.savepath, tb_overwrite)
+        TensorBoardLogger.set_step_increment!(tblogger, 0) # since we manually set_step!
     end
     !ispath(args.savepath) && mkpath(args.savepath)
     set_log_file(joinpath(args.savepath, "console.log"))
@@ -135,8 +136,8 @@ function train!(model; kws...)
         if args.tblogger
             TensorBoardLogger.set_step!(tblogger, epoch)
             with_logger(tblogger) do
-                @info "train" loss=train.loss  acc=train.acc   log_step_increment=0
-                @info "test"  loss=test.loss   acc=test.acc    log_step_increment=0
+                @info "train" loss=train.loss  acc=train.acc
+                @info "test"  loss=test.loss   acc=test.acc
             end
         end
     end
@@ -154,7 +155,7 @@ function train!(model; kws...)
                 loss(ŷ, y)
             end
             Flux.Optimise.update!(opt, ps, gs)
-            ProgressMeter.next!(p)   # comment out for removing progress bar
+            ProgressMeter.next!(p)   # comment out for no progress bar
         end
         
         epoch % args.infotime == 0 && report(epoch)
@@ -170,7 +171,7 @@ end
 
 ## Execution as script
 if abspath(PROGRAM_FILE) == @__FILE__ 
-    ## Load model and continue training (warn: loosing optimizer state)
+    ## Load model and continue training (warn: resetting optimizer's internal state)
     # model = BSON.load("model.bson")[:model]   ## https://github.com/JuliaIO/BSON.jl/issues/69
     # train!(model)
     
